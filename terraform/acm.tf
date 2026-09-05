@@ -1,4 +1,4 @@
-# Regional cert for the API Gateway custom domain — must be in the same region as the
+# Regional cert for the API Gateway custom domain - must be in the same region as the
 # REGIONAL API Gateway endpoint (var.aws_region), unlike CloudFront certs which always
 # need us-east-1 regardless of where the distribution serves from.
 resource "aws_acm_certificate" "api" {

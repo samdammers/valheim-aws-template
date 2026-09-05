@@ -1,5 +1,5 @@
 # PyNaCl (Ed25519 signature verification for Discord interactions) has no pure-Python
-# option we want to hand-roll, and Lambda's runtime doesn't bundle it — so vendor it in
+# option we want to hand-roll, and Lambda's runtime doesn't bundle it - so vendor it in
 # directly rather than depending on a third-party Lambda Layer of uncertain regional
 # availability. Re-runs only when requirements.txt changes.
 resource "null_resource" "lambda_dependencies" {
@@ -46,7 +46,7 @@ resource "aws_lambda_function" "valheim" {
   runtime = "python3.12"
   timeout = 30
   # Lambda CPU scales with memory. 128MB left boto3.client("ec2") taking ~3s just to
-  # parse EC2's large service model (real CPU-bound work, confirmed via cProfile) —
+  # parse EC2's large service model (real CPU-bound work, confirmed via cProfile) -
   # 512MB cuts that dramatically for the routes that do need an EC2 client.
   memory_size = 512
   role        = aws_iam_role.lambda.arn
@@ -55,7 +55,7 @@ resource "aws_lambda_function" "valheim" {
   # as "leave whatever's already deployed" rather than resetting to AWS's true default,
   # so dropping this line wouldn't actually move an existing arm64 function to x86_64.
   # x86_64 matches the manylinux wheel we vendor PyNaCl for above (and the EC2 instance's
-  # architecture) — not worth cross-compiling for arm64 at this scale.
+  # architecture) - not worth cross-compiling for arm64 at this scale.
   architectures = ["x86_64"]
 
   environment {

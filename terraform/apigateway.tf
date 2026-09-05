@@ -75,7 +75,7 @@ resource "aws_api_gateway_integration" "status" {
   timeout_milliseconds    = 15000
 }
 
-# /discord — Discord Interactions Endpoint (slash commands). Authorization is "NONE"
+# /discord - Discord Interactions Endpoint (slash commands). Authorization is "NONE"
 # at the AWS layer deliberately: Discord's servers call this directly (no IP to
 # allowlist), and the Lambda verifies Discord's own Ed25519 request signature instead.
 resource "aws_api_gateway_resource" "discord" {
@@ -99,7 +99,7 @@ resource "aws_api_gateway_integration" "discord" {
   timeout_milliseconds    = 15000
 }
 
-# Deployment — recreated automatically when any integration changes
+# Deployment - recreated automatically when any integration changes
 resource "aws_api_gateway_deployment" "valheim" {
   rest_api_id = aws_api_gateway_rest_api.valheim.id
 

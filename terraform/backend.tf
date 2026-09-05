@@ -1,4 +1,4 @@
-# Partial backend config — bucket/key/region are consumer-specific, so they're not
+# Partial backend config - bucket/key/region are consumer-specific, so they're not
 # hardcoded here. Copy backend.hcl.example to backend.hcl (gitignored), fill in your
 # own values (an S3 bucket you already own), then:
 #   terraform init -backend-config=backend.hcl

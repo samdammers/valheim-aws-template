@@ -1,4 +1,4 @@
-# Static — the Elastic IP doesn't change across stop/start, so (unlike an ECS/Fargate
+# Static - the Elastic IP doesn't change across stop/start, so (unlike an ECS/Fargate
 # setup, where every task start gets a new ENI/IP) there's no dynamic-DNS-on-boot
 # Lambda needed here.
 resource "aws_route53_record" "valheim" {

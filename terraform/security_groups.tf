@@ -15,7 +15,7 @@ resource "aws_vpc_security_group_ingress_rule" "valheim_game_ports" {
   to_port           = 2458
 }
 
-# No SSH ingress — admin shell access is via SSM Session Manager only.
+# No SSH ingress - admin shell access is via SSM Session Manager only.
 resource "aws_vpc_security_group_egress_rule" "valheim_out" {
   security_group_id = aws_security_group.valheim.id
   cidr_ipv4         = "0.0.0.0/0"

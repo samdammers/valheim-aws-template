@@ -1,4 +1,4 @@
-# Safety net on top of the EBS volume already surviving stop/start — protects against
+# Safety net on top of the EBS volume already surviving stop/start - protects against
 # accidental deletion/corruption of the world data volume itself.
 resource "aws_iam_role" "backup" {
   name = "valheim-backup-role"

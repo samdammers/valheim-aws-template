@@ -16,12 +16,12 @@ output "data_volume_id" {
 }
 
 output "data_volume_arn" {
-  description = "For one-off `aws backup start-backup-job --resource-arn ...` snapshots — see README"
+  description = "For one-off `aws backup start-backup-job --resource-arn ...` snapshots - see README"
   value       = "arn:aws:ec2:${local.region}:${data.aws_caller_identity.current.account_id}:volume/${aws_ebs_volume.valheim_data.id}"
 }
 
 output "api_invoke_url" {
-  description = "Direct API Gateway invoke URL — works even before the custom domain propagates"
+  description = "Direct API Gateway invoke URL - works even before the custom domain propagates"
   value       = aws_api_gateway_stage.valheim.invoke_url
 }
 

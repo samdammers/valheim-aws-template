@@ -1,5 +1,5 @@
 # --- World data volume ---
-# Survives instance stop/start automatically (EBS volumes stay attached — this is
+# Survives instance stop/start automatically (EBS volumes stay attached - this is
 # not the ephemeral-storage problem Fargate has). Sized to hold both the /config
 # saves and the /opt/valheim install dir, so a restart doesn't need to redownload
 # the game via SteamCMD.
@@ -36,7 +36,7 @@ resource "aws_instance" "valheim" {
   tags = merge(local.tags, { Name = "valheim-server" })
 
   lifecycle {
-    # The SSM AMI parameter rolls to a new patch version regularly — don't force a
+    # The SSM AMI parameter rolls to a new patch version regularly - don't force a
     # replace (and thus a re-run of first-boot user_data) on every apply.
     ignore_changes = [ami]
   }

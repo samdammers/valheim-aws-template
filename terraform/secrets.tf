@@ -9,7 +9,7 @@ resource "aws_secretsmanager_secret" "valheim" {
   tags        = local.tags
 }
 
-# The Lambda itself never needs this — it only verifies request signatures with the
+# The Lambda itself never needs this - it only verifies request signatures with the
 # (non-secret) public key. This is used solely by scripts/register-discord-commands.sh
 # to register slash commands via Discord's REST API, run manually/out-of-band:
 #   aws secretsmanager put-secret-value \
@@ -18,6 +18,6 @@ resource "aws_secretsmanager_secret" "valheim" {
 #     --region <your-aws-region>
 resource "aws_secretsmanager_secret" "discord_bot_token" {
   name        = "valheim/discord-bot-token"
-  description = "Discord bot token, populated manually — only used for one-off slash command registration, never by the Lambda"
+  description = "Discord bot token, populated manually - only used for one-off slash command registration, never by the Lambda"
   tags        = local.tags
 }
