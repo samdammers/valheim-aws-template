@@ -2,17 +2,17 @@
 Valheim server management Lambda.
 
 Routes:
-  GET  /start   — Start the EC2 instance
-  GET  /stop    — Stop the EC2 instance
-  GET  /status  — Instance state + public IP
-  POST /discord — Discord Interactions Endpoint (slash commands: /valheim-start,
+  GET  /start   - Start the EC2 instance
+  GET  /stop    - Stop the EC2 instance
+  GET  /status  - Instance state + public IP
+  POST /discord - Discord Interactions Endpoint (slash commands: /valheim-start,
                    /valheim-stop, /valheim-status). Authenticated by Discord's Ed25519
-                   request signature, not AWS auth — Discord's servers call this
+                   request signature, not AWS auth - Discord's servers call this
                    directly and there's no IP to allowlist. /valheim-start and
                    /valheim-status also return the connect address + password,
-                   ephemerally (only the command's caller sees it) — the plain HTTP
+                   ephemerally (only the command's caller sees it) - the plain HTTP
                    /status route below never includes the password.
-Scheduled event  — {"scheduled_action": "check_idle"}: stop the instance if it looks
+Scheduled event  - {"scheduled_action": "check_idle"}: stop the instance if it looks
                     idle (low average network activity over a trailing window), unless
                     it's still within its post-start grace period.
 """
@@ -60,7 +60,7 @@ def instance_status(ec2_client):
 
 
 # ---------------------------------------------------------------------------
-# Idle detection — called on a schedule (EventBridge, every N minutes)
+# Idle detection - called on a schedule (EventBridge, every N minutes)
 # ---------------------------------------------------------------------------
 
 def check_idle(ec2_client, cloudwatch_client):
@@ -68,7 +68,7 @@ def check_idle(ec2_client, cloudwatch_client):
     instance = resp["Reservations"][0]["Instances"][0]
 
     if instance["State"]["Name"] != "running":
-        return "Instance not running — nothing to check"
+        return "Instance not running - nothing to check"
 
     launch_time = instance["LaunchTime"]
     now = datetime.now(timezone.utc)
@@ -77,7 +77,7 @@ def check_idle(ec2_client, cloudwatch_client):
     if minutes_running < IDLE_GRACE_PERIOD_MINUTES:
         return (
             f"Within grace period ({minutes_running:.0f}m < "
-            f"{IDLE_GRACE_PERIOD_MINUTES}m since start) — skipping idle check"
+            f"{IDLE_GRACE_PERIOD_MINUTES}m since start) - skipping idle check"
         )
 
     end = now
@@ -94,21 +94,21 @@ def check_idle(ec2_client, cloudwatch_client):
 
     datapoints = metrics.get("Datapoints", [])
     if not datapoints:
-        return "No CloudWatch datapoints yet — skipping idle check"
+        return "No CloudWatch datapoints yet - skipping idle check"
 
     avg_bytes = datapoints[0]["Average"]
     if avg_bytes < IDLE_THRESHOLD_BYTES:
         stop_instance(ec2_client)
         return (
             f"Idle (avg NetworkIn {avg_bytes:.0f}B < {IDLE_THRESHOLD_BYTES:.0f}B "
-            f"over {IDLE_WINDOW_MINUTES}m) — stopping instance"
+            f"over {IDLE_WINDOW_MINUTES}m) - stopping instance"
         )
 
-    return f"Active (avg NetworkIn {avg_bytes:.0f}B) — leaving instance running"
+    return f"Active (avg NetworkIn {avg_bytes:.0f}B) - leaving instance running"
 
 
 # ---------------------------------------------------------------------------
-# Discord Interactions (slash commands over a plain HTTPS webhook — no gateway
+# Discord Interactions (slash commands over a plain HTTPS webhook - no gateway
 # connection, no always-on bot process needed)
 # ---------------------------------------------------------------------------
 
@@ -157,7 +157,7 @@ def handle_discord_interaction(event):
     interaction = json.loads(raw_body)
     interaction_type = interaction.get("type")
 
-    # PING — Discord's endpoint-verification handshake. Deliberately touches no AWS
+    # PING - Discord's endpoint-verification handshake. Deliberately touches no AWS
     # SDK client at all: constructing a boto3 EC2 client alone costs ~3s (parsing its
     # large service model), which blew well past whatever timeout Discord enforces on
     # this handshake and was the actual cause of "endpoint could not be verified."
@@ -170,7 +170,7 @@ def handle_discord_interaction(event):
         command = interaction.get("data", {}).get("name")
 
         # /valheim-start and /valheim-status also hand back how to connect (address +
-        # password) — ephemeral (visible only to whoever ran the command), even though
+        # password) - ephemeral (visible only to whoever ran the command), even though
         # this Discord is invite-only, so the password doesn't sit in plain channel
         # history/screenshots. The plain HTTP /status route never gets the password.
         if command == "valheim-start":
@@ -199,7 +199,7 @@ def lambda_handler(event, context):
     print(json.dumps(event))
     route = event.get("path", "")
 
-    # Handled entirely without touching boto3 — see handle_discord_interaction for why.
+    # Handled entirely without touching boto3 - see handle_discord_interaction for why.
     if route == "/discord":
         return handle_discord_interaction(event)
 

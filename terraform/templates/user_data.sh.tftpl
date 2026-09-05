@@ -2,7 +2,7 @@
 # Runs once, on first boot only (standard cloud-init behavior). This is fine for our
 # stop/start (not terminate/recreate) pattern: the EBS data volume is reattached and
 # auto-mounted via /etc/fstab on every boot, and dockerd auto-restarts the container
-# (--restart unless-stopped) whenever the daemon starts — so nothing here needs to
+# (--restart unless-stopped) whenever the daemon starts - so nothing here needs to
 # re-run after the first boot.
 set -euo pipefail
 exec > >(tee /var/log/valheim-userdata.log) 2>&1

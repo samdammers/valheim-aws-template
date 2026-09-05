@@ -1,5 +1,7 @@
 # Valheim on AWS
 
+![Valheim Dedicated Server](docs/images/valheim-repo-banner.jpg)
+
 Valheim dedicated server on a single EC2 instance, managed by Terraform, with an
 API-driven start/stop + idle-auto-stop layer so the server (and its bill) isn't
 running 24/7 - plus an optional Discord slash-command integration
@@ -207,21 +209,23 @@ container with updated `ADMINLIST_IDS`.
 Slash commands `/valheim-start`, `/valheim-stop`, `/valheim-status` - same Lambda,
 via the `/discord` webhook route, no separate hosting (no always-on bot process to
 run anywhere). Skip this whole section if you don't want it: leave
-`discord_application_id`/`discord_public_key` blank in your tfvars and the
-`/discord` route just rejects every request with 401.
+`discord_public_key` blank in your tfvars and the `/discord` route just rejects
+every request with 401.
 
-There are two separate Discord credentials involved and it's easy to mix them up:
-a **public key** (goes in Terraform, verifies that requests really came from
-Discord - not secret) and a **bot token** (goes in Secrets Manager, used once to
-register the commands - a real secret, never commit it or put it in `.tfvars`).
+Three Discord values are involved, and only one of them is actually a Terraform
+variable: a **public key** (goes in Terraform, verifies that requests really came
+from Discord - not secret), a **bot token** (goes in Secrets Manager, used once to
+register the commands - a real secret, never commit it or put it in `.tfvars`), and
+an **Application ID** (just a value you keep handy for step 5 below - Terraform
+never needs it, since neither the Lambda nor any resource here reads it).
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
    -> **New Application**, give it a name. This is the one-time app setup Discord's
    own docs walk through in more detail if you want it:
    [Discord: Overview of Apps](https://discord.com/developers/docs/quick-start/overview-of-apps).
-2. On the app's **General Information** page, copy the **Application ID** and
-   **Public Key** into `discord_application_id` / `discord_public_key` in your
-   `terraform.tfvars`, then `terraform apply`.
+2. On the app's **General Information** page, note the **Application ID** (you'll
+   need it for step 5) and copy the **Public Key** into `discord_public_key` in
+   your `terraform.tfvars`, then `terraform apply`.
 3. Still on **General Information**, set **Interactions Endpoint URL** to the value
    of `terraform output discord_interactions_url`. Discord immediately sends a test
    request here and will refuse to save the URL unless the Lambda is already
@@ -239,7 +243,7 @@ register the commands - a real secret, never commit it or put it in `.tfvars`).
    list itself changes - this bulk-overwrites Discord's global command list for
    your app, it doesn't merge):
    ```bash
-   DISCORD_APPLICATION_ID=<id> AWS_REGION=<your-aws-region> ./scripts/register-discord-commands.sh
+   DISCORD_APPLICATION_ID=<the-application-id-from-step-2> AWS_REGION=<your-aws-region> ./scripts/register-discord-commands.sh
    ```
 6. On the **OAuth2 -> URL Generator** tab, check **both** the `bot` and
    `applications.commands` scopes, open the generated URL, and invite the app to
