@@ -1,0 +1,26 @@
+# Copy this to .envrc and fill in your values.
+# .envrc is gitignored - never commit secrets.
+# Run `direnv allow` after editing.
+
+# --- Required - no sensible default, these are yours ---
+export TF_VAR_aws_region="us-east-1"
+export TF_VAR_domain="example.com"           # a Route53 hosted zone you already own
+export TF_VAR_hosted_zone_id="ZXXXXXXXXXXXXXXXXXXXX" # `aws route53 list-hosted-zones-by-name --dns-name example.com`
+export TF_VAR_vpc_id="vpc-xxxxxxxxxxxxxxxxx" # `aws ec2 describe-vpcs`
+export TF_VAR_subnet_id="subnet-xxxxxxxxxxxxxxxxx" # a *public* subnet in the VPC above, `aws ec2 describe-subnets`
+
+# --- Optional - sensible defaults, override to taste ---
+# export TF_VAR_server_name="My Valheim Server"
+# export TF_VAR_world_name="MyWorld"
+# export TF_VAR_server_args="-modifier combat hard -modifier resources more"
+# export TF_VAR_admin_steamids='["76561198000000000"]' # list variables need JSON-array syntax
+# export TF_VAR_instance_type="t3.xlarge"
+
+# --- Optional Discord slash-command integration (leave blank to skip) ---
+# export TF_VAR_discord_public_key=""
+# export TF_VAR_discord_webhook_url=""
+# Your Discord app's Application ID is also needed later (see README), but
+# only for a one-off manual command - it's never a Terraform variable.
+
+# --- Optional - cosmetic ---
+# export TF_VAR_repo_tag="your-github-username/your-fork-name"

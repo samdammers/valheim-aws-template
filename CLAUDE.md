@@ -36,13 +36,14 @@ of uncertain regional availability.
 
 Every account-specific value (domain, hosted zone ID, VPC/subnet, AWS region,
 Discord app credentials) is a `variable` with **no default** in `variables.tf` (or a
-generic placeholder default) - consumers supply their own via `terraform.tfvars`
-(see `terraform.tfvars.example`). Similarly, `backend.tf` is a *partial* S3 backend
+generic placeholder default) - consumers supply their own via `TF_VAR_*`
+environment variables in `.envrc` (see `.envrc.example`), not a tracked
+`terraform.tfvars`. Similarly, `backend.tf` is a *partial* S3 backend
 config - bucket/key/region come from `-backend-config=backend.hcl`
 (`backend.hcl.example`), since a hardcoded state bucket would point every consumer's
 Terraform at the same bucket. If you're adding a new account-specific value, follow
 that pattern: variable with no default (or a generic placeholder) + an entry in
-`terraform.tfvars.example`, never a real value baked into a `.tf` file's default.
+`.envrc.example`, never a real value baked into a `.tf` file's default.
 
 ## Important caveats (see README for the full list)
 
@@ -75,5 +76,5 @@ that pattern: variable with no default (or a generic placeholder) + an entry in
   `idle_grace_period_minutes`, `idle_threshold_bytes`) are an unvalidated starting
   heuristic - every consumer's play patterns differ, so don't treat them as tuned.
 - The server password lives in Secrets Manager (`valheim/credentials`), populated
-  out-of-band via `aws secretsmanager put-secret-value` - never put it in a `.tfvars`
-  file or Terraform state.
+  out-of-band via `aws secretsmanager put-secret-value` - never put it in `.envrc`
+  or Terraform state.

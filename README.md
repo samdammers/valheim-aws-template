@@ -150,17 +150,20 @@ AWS free tier).
 ## Configure
 
 ```bash
+cp .envrc.example .envrc   # fill in domain, hosted_zone_id, vpc_id, subnet_id, etc., then: direnv allow
 cd terraform/
-cp terraform.tfvars.example terraform.tfvars   # fill in domain, hosted_zone_id, vpc_id, subnet_id, etc.
-cp backend.hcl.example backend.hcl             # fill in your state bucket (or delete backend.tf for local state)
+cp backend.hcl.example backend.hcl   # fill in your state bucket (or delete backend.tf for local state)
 
 terraform init -backend-config=backend.hcl
 terraform apply
 ```
 
-`terraform.tfvars` and `backend.hcl` are both gitignored - see `terraform.tfvars.example`
-and `backend.hcl.example` for the full list of variables and their descriptions
-(`terraform/variables.tf` is the source of truth).
+`.envrc` and `backend.hcl` are both gitignored - see `.envrc.example` and
+`backend.hcl.example` for the full list of variables and their descriptions
+(`terraform/variables.tf` is the source of truth). This repo uses `TF_VAR_*`
+environment variables (via [direnv](https://direnv.net/)) rather than a
+tracked `terraform.tfvars`, so nothing here depends on you remembering to
+`-var-file` anything.
 
 Then populate the server password (never stored in Terraform state):
 
@@ -194,7 +197,7 @@ aws ec2 stop-instances --instance-ids <instance-id> --region <your-aws-region>
 The server auto-stops itself after `idle_window_minutes` of low network activity
 (checked every 10 minutes, with `idle_grace_period_minutes` after each start so a
 fresh boot isn't stopped before anyone connects). Tune these three variables in
-`terraform/variables.tf` (or your `terraform.tfvars`) once you've watched real
+`terraform/variables.tf` (or your `.envrc`) once you've watched real
 CloudWatch `NetworkIn` numbers for a few sessions - the defaults are a starting
 heuristic, not a measured value.
 
@@ -215,7 +218,7 @@ sudo docker logs -f valheim
 
 ### Admins / whitelist
 
-Add SteamID64s to `admin_steamids` in your `terraform.tfvars` and `terraform apply`
+Add SteamID64s to `admin_steamids` in your `.envrc` (JSON-array syntax - see `.envrc.example`) and `terraform apply`
 - this rewrites user-data, which only takes effect on a fresh instance (see caveats
 below). For a same-session change without a full replace, SSM in and re-run the
 container with updated `ADMINLIST_IDS`.
@@ -225,13 +228,13 @@ container with updated `ADMINLIST_IDS`.
 Slash commands `/valheim-start`, `/valheim-stop`, `/valheim-status` - same Lambda,
 via the `/discord` webhook route, no separate hosting (no always-on bot process to
 run anywhere). Skip this whole section if you don't want it: leave
-`discord_public_key` blank in your tfvars and the `/discord` route just rejects
+`TF_VAR_discord_public_key` blank in your `.envrc` and the `/discord` route just rejects
 every request with 401.
 
 Three Discord values are involved, and only one of them is actually a Terraform
 variable: a **public key** (goes in Terraform, verifies that requests really came
 from Discord - not secret), a **bot token** (goes in Secrets Manager, used once to
-register the commands - a real secret, never commit it or put it in `.tfvars`), and
+register the commands - a real secret, never commit it or put it in `.envrc`), and
 an **Application ID** (just a value you keep handy for step 5 below - Terraform
 never needs it, since neither the Lambda nor any resource here reads it).
 
@@ -240,8 +243,8 @@ never needs it, since neither the Lambda nor any resource here reads it).
    own docs walk through in more detail if you want it:
    [Discord: Overview of Apps](https://discord.com/developers/docs/quick-start/overview-of-apps).
 2. On the app's **General Information** page, note the **Application ID** (you'll
-   need it for step 5) and copy the **Public Key** into `discord_public_key` in
-   your `terraform.tfvars`, then `terraform apply`.
+   need it for step 5) and copy the **Public Key** into `TF_VAR_discord_public_key`
+   in your `.envrc`, then `terraform apply`.
 3. Still on **General Information**, set **Interactions Endpoint URL** to the value
    of `terraform output discord_interactions_url`. Discord immediately sends a test
    request here and will refuse to save the URL unless the Lambda is already
@@ -304,7 +307,7 @@ hardcoded profile) - make sure your CLI is authenticated before running.
 
 | File | Purpose |
 |---|---|
-| `variables.tf` | Every input this stack takes - see `terraform.tfvars.example` |
+| `variables.tf` | Every input this stack takes - see `.envrc.example` |
 | `ec2.tf` | EC2 instance, EBS data volume + attachment, Elastic IP |
 | `security_groups.tf` | UDP 2456-2458 ingress only - no SSH |
 | `templates/user_data.sh.tftpl` | First-boot script: installs Docker, mounts the data volume, runs the container |
@@ -338,7 +341,7 @@ hardcoded profile) - make sure your CLI is authenticated before running.
 - **Idle-stop is heuristic** - it uses average `NetworkIn` over a trailing window,
   not actual player count. Watch real metrics for a session or two and tune
   `idle_window_minutes`, `idle_grace_period_minutes`, `idle_threshold_bytes` in your
-  `terraform.tfvars`.
+  `.envrc`.
 - **Elastic IP costs a small hourly fee** even while the instance is stopped (AWS
   bills all EIPs regardless of attachment state) - a few cents a month, not worth
   optimising away for the DNS stability it buys.
