@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # 1. Terraform provider version constraints (aws, archive, null)
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Australia/Sydney"
+    groups:
+      all-terraform-providers:
+        patterns:
+          - "*"
+
+  # 2. Lambda's Python dependency (PyNaCl)
+  - package-ecosystem: "pip"
+    directory: "/terraform/lambda"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Australia/Sydney"
+    groups:
+      all-pip-dependencies:
+        patterns:
+          - "*"
+
+  # 3. GitHub Actions used in this repo's own workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Australia/Sydney"
+    groups:
+      all-github-actions:
+        patterns:
+          - "*"

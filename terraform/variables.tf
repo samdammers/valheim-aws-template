@@ -85,6 +85,7 @@ variable "idle_threshold_bytes" {
   default     = 100000
 }
 
+# tflint-ignore: terraform_unused_declarations
 variable "discord_application_id" {
   description = "Optional: Discord application (client) ID for the bot - from the Developer Portal's General Information page. Not secret. Leave blank to skip the Discord slash-command integration."
   type        = string

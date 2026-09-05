@@ -340,3 +340,12 @@ aws backup start-backup-job \
   --iam-role-arn "$ROLE" \
   --region <your-aws-region>
 ```
+
+## Contributing
+
+CI (`.github/workflows/terraform.yml`) runs `terraform fmt`, `validate`, and
+`tflint` against every push and PR, plus a Python syntax check on the Lambda
+handler - all static checks, no AWS credentials involved. Dependabot keeps
+provider versions, the Lambda's PyNaCl dependency, and the workflow's own
+GitHub Actions up to date. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for
+community expectations.
