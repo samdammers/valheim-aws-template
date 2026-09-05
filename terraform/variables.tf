@@ -48,8 +48,43 @@ variable "world_name" {
   default     = "MyWorld"
 }
 
+variable "world_preset" {
+  description = "Name of a preset in world-presets.yaml (\"vanilla\", \"casual\", \"hardcore\", or your own added ones) to use as defaults for world_modifiers. Leave blank for vanilla/no modifiers. Only takes effect when a world is first generated - same live-instance caveat as world_name."
+  type        = string
+  default     = ""
+}
+
+variable "world_modifiers" {
+  description = "Override individual world modifier dials on top of world_preset (or on their own, with no preset). Any key left null falls back to the preset's value for that dial (or vanilla, if no preset). Valid values, confirmed against Valheim's own dedicated-server docs: combat = veryeasy|easy|hard|veryhard; deathpenalty = casual|veryeasy|easy|hard|hardcore; resources = muchless|less|more|muchmore|most; raids = none|muchless|less|more|muchmore; portals = casual|hard|veryhard."
+  type = object({
+    combat       = optional(string)
+    deathpenalty = optional(string)
+    resources    = optional(string)
+    raids        = optional(string)
+    portals      = optional(string)
+  })
+  default = {}
+
+  validation {
+    condition = alltrue([
+      var.world_modifiers.combat == null || contains(["veryeasy", "easy", "hard", "veryhard"], var.world_modifiers.combat),
+      var.world_modifiers.deathpenalty == null || contains(["casual", "veryeasy", "easy", "hard", "hardcore"], var.world_modifiers.deathpenalty),
+      var.world_modifiers.resources == null || contains(["muchless", "less", "more", "muchmore", "most"], var.world_modifiers.resources),
+      var.world_modifiers.raids == null || contains(["none", "muchless", "less", "more", "muchmore"], var.world_modifiers.raids),
+      var.world_modifiers.portals == null || contains(["casual", "hard", "veryhard"], var.world_modifiers.portals),
+    ])
+    error_message = "Invalid world modifier value - see this variable's description for the valid set per key."
+  }
+}
+
+variable "world_setkeys" {
+  description = "Global world rule toggles, e.g. [\"playerevents\", \"nobuildcost\", \"passivemobs\", \"nomap\", \"dungeonbuild\"]. Deliberately not validated against a fixed list - Valheim doesn't publish one single exhaustive set of these, and an unrecognized key is just silently ignored server-side rather than causing an error."
+  type        = list(string)
+  default     = []
+}
+
 variable "server_args" {
-  description = "Extra Valheim dedicated-server CLI flags (world modifiers etc., e.g. \"-modifier combat hard -modifier resources more\") - only take effect when a world is first generated. Same live-instance caveat as world_name."
+  description = "Extra raw Valheim dedicated-server CLI flags, appended after whatever world_preset/world_modifiers/world_setkeys generate - an escape hatch for anything those don't cover. Only takes effect when a world is first generated. Same live-instance caveat as world_name."
   type        = string
   default     = ""
 }

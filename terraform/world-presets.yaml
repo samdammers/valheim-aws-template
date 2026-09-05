@@ -1,0 +1,29 @@
+# Named presets for world_preset - each key here is a preset name you can set
+# world_preset to. Values are confirmed Valheim -modifier values (combat,
+# deathpenalty, resources, raids, portals); null means "don't set this dial,
+# leave it at vanilla". world_modifiers overrides any individual dial on top
+# of whichever preset (or none) you pick - see the README for how they combine.
+#
+# Feel free to add your own presets here, or edit these - it's just data, no
+# Terraform changes needed to add one.
+
+vanilla:
+  combat: null
+  deathpenalty: null
+  resources: null
+  raids: null
+  portals: null
+
+casual:
+  combat: veryeasy
+  deathpenalty: casual
+  resources: more
+  raids: less
+  portals: casual
+
+hardcore:
+  combat: veryhard
+  deathpenalty: hardcore
+  resources: muchless
+  raids: muchmore
+  portals: veryhard

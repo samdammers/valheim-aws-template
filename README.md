@@ -269,11 +269,40 @@ never needs it, since neither the Lambda nor any resource here reads it).
    your server. Without `applications.commands` checked, the commands won't show up
    in that server even though they're registered globally in step 5.
 
+### World modifiers: presets or individual dials
+
+Three variables combine to build the world modifier flags Valheim actually
+gets, in this order (each layer only fills in what the one before it didn't
+set):
+
+1. **`world_preset`** - a named preset from `terraform/world-presets.yaml`
+   (`"vanilla"` (default, no modifiers), `"casual"`, `"hardcore"`, or add your
+   own to that file - it's just data, no Terraform changes needed).
+2. **`world_modifiers`** - override individual dials on top of the preset (or
+   with no preset at all): `combat`, `deathpenalty`, `resources`, `raids`,
+   `portals`. Each has a fixed, validated set of valid values (see
+   `variables.tf`'s description for `world_modifiers` for the full list) -
+   `terraform plan` will reject a typo immediately rather than let it reach
+   the server.
+3. **`world_setkeys`** - a free-form list of global toggles (e.g.
+   `["playerevents", "dungeonbuild", "passivemobs"]`). Deliberately not
+   validated: Valheim doesn't publish one single exhaustive list of these,
+   and an unrecognized one is just silently ignored server-side rather than
+   erroring.
+
+`server_args` still exists too, as a raw escape hatch appended after all of
+the above, for anything they don't cover.
+
+Example: `world_preset = "casual"` with `world_modifiers = { raids = "less" }`
+gets you the casual preset's combat/deathpenalty/resources/portals values,
+with raids specifically overridden to `less` instead of casual's own value.
+
 ### Creating a new world (world modifiers, difficulty, seed)
 
 World modifiers only take effect when a world is **first generated** - changing
-`world_name` or `server_args` in Terraform does nothing to a world that already
-exists on disk. Two ways to create a new one:
+`world_name`, `world_preset`/`world_modifiers`/`world_setkeys`, or `server_args`
+in Terraform does nothing to a world that already exists on disk. Two ways to
+create a new one:
 
 - **Clean (recommended)**: `terraform apply -replace=aws_instance.valheim` - destroys
   and recreates just the EC2 instance. The EBS data volume is a separate resource and
@@ -282,7 +311,9 @@ exists on disk. Two ways to create a new one:
   world under whatever `world_name` is currently set.
 - **Manual**: SSM in, `docker rm -f valheim`, then re-run the `docker run` command
   from `templates/user_data.sh.tftpl` by hand with the new `WORLD_NAME`/`SERVER_ARGS`
-  env vars.
+  env vars (`terraform console` then `local.generated_server_args` prints the
+  resolved flags if you're using `world_preset`/`world_modifiers`/`world_setkeys`
+  rather than typing them out yourself).
 
 The old world's files aren't touched by either path above - they just sit alongside
 the new one on the data volume unless explicitly removed. If you don't want to keep
@@ -308,6 +339,7 @@ hardcoded profile) - make sure your CLI is authenticated before running.
 | File | Purpose |
 |---|---|
 | `variables.tf` | Every input this stack takes - see `.envrc.example` |
+| `world-presets.yaml` | Named world modifier presets for `world_preset` - just data, edit freely |
 | `ec2.tf` | EC2 instance, EBS data volume + attachment, Elastic IP |
 | `security_groups.tf` | UDP 2456-2458 ingress only - no SSH |
 | `templates/user_data.sh.tftpl` | First-boot script: installs Docker, mounts the data volume, runs the container |

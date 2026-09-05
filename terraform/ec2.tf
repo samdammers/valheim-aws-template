@@ -28,7 +28,7 @@ resource "aws_instance" "valheim" {
     world_name          = var.world_name
     admin_steamids      = join(" ", var.admin_steamids)
     discord_webhook_url = var.discord_webhook_url
-    server_args         = var.server_args
+    server_args         = local.generated_server_args
     secret_arn          = aws_secretsmanager_secret.valheim.arn
     region              = local.region
   })

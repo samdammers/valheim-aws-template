@@ -12,9 +12,15 @@ export TF_VAR_subnet_id="subnet-xxxxxxxxxxxxxxxxx" # a *public* subnet in the VP
 # --- Optional - sensible defaults, override to taste ---
 # export TF_VAR_server_name="My Valheim Server"
 # export TF_VAR_world_name="MyWorld"
-# export TF_VAR_server_args="-modifier combat hard -modifier resources more"
 # export TF_VAR_admin_steamids='["76561198000000000"]' # list variables need JSON-array syntax
 # export TF_VAR_instance_type="t3.xlarge"
+
+# --- Optional world modifiers - see terraform/world-presets.yaml, and the
+# README for how world_preset and world_modifiers combine ---
+# export TF_VAR_world_preset="casual" # "vanilla" (default), "casual", "hardcore", or your own added preset
+# export TF_VAR_world_modifiers='{"raids": "less"}' # overrides individual dials on top of world_preset - object variables need JSON syntax
+# export TF_VAR_world_setkeys='["playerevents", "dungeonbuild"]' # free-form global toggles - list variables need JSON-array syntax
+# export TF_VAR_server_args="" # raw escape hatch, appended after the above - for anything they don't cover
 
 # --- Optional Discord slash-command integration (leave blank to skip) ---
 # export TF_VAR_discord_public_key=""
