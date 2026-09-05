@@ -18,3 +18,6 @@ subnet_id      = "subnet-xxxxxxxxxxxxxxxxx" # a *public* subnet in the VPC above
 # discord_application_id = ""
 # discord_public_key     = ""
 # discord_webhook_url    = ""
+
+# --- Optional — cosmetic ---
+# repo_tag = "your-github-username/your-fork-name"

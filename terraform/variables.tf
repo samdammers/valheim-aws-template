@@ -102,3 +102,9 @@ variable "manage_api_gateway_account" {
   type        = bool
   default     = true
 }
+
+variable "repo_tag" {
+  description = "Value for the Repo default tag applied to every resource this stack creates — override if you forked/renamed this repo."
+  type        = string
+  default     = "samdammers/valheim-aws-template"
+}
