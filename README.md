@@ -11,12 +11,17 @@ This is a template: every account-specific value (domain, AWS account, VPC, ...)
 a variable you supply, not a default baked into the repo. See [Prerequisites](#prerequisites)
 and [Configure](#configure) below.
 
-> **Setting up a brand-new personal AWS account?** [samdammers/aws](https://github.com/samdammers/aws)
+> **Setting up a brand-new personal AWS account?**
+> [samdammers/aws-personal-account-template](https://github.com/samdammers/aws-personal-account-template)
 > bootstraps secure sign-in (Google login via Auth0 + IAM Identity Center, no IAM
 > user password) plus baseline guardrails (CloudTrail, an org-wide SCP, cost
 > anomaly alerts) - a good first step before deploying stacks like this one. It's
-> optional and independent: it doesn't create the VPC, hosted zone, or state
-> bucket this template needs (see [Prerequisites](#prerequisites)).
+> optional and independent, but its outputs cover most of this template's own
+> prerequisites: its default VPC adoption satisfies [prerequisite 3](#3-a-vpc-with-a-public-subnet),
+> its `artifacts-<account-id>` bucket is exactly the state bucket
+> [prerequisite 4](#4-terraform-and-an-s3-bucket-for-its-state) asks for, and setting its
+> `domain_name` variable creates the hosted zone
+> [prerequisite 2](#2-a-domain-delegated-to-a-route53-hosted-zone) needs.
 
 ## Architecture
 
@@ -77,7 +82,10 @@ needs broad IAM permissions itself.
 ### 2. A domain, delegated to a Route53 hosted zone
 
 This stack only **adds records to** an existing Route53 public hosted zone - it
-doesn't register a domain or create the zone for you. Two ways to get one:
+doesn't register a domain or create the zone for you. If you've applied
+[samdammers/aws-personal-account-template](https://github.com/samdammers/aws-personal-account-template)
+with its `domain_name` variable set, its `hosted_zone_id` output is exactly
+this. Otherwise, two ways to get one:
 
 - **Register a new domain directly through Route53** (simplest - the hosted zone
   is created for you automatically):
@@ -97,6 +105,10 @@ aws route53 list-hosted-zones-by-name --dns-name <your-domain>
 
 The **default VPC** that every AWS region already has works fine - you don't need
 to create a custom one. ([What's a default VPC?](https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html))
+If you've applied
+[samdammers/aws-personal-account-template](https://github.com/samdammers/aws-personal-account-template),
+it already adopted this VPC and locked down its default security group - you
+still need the VPC/subnet IDs below either way.
 Find your default VPC and one of its subnets with:
 ```bash
 aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text --region <your-aws-region>
@@ -109,7 +121,11 @@ the first one returned is fine.
 
 Install Terraform >= 1.16: [developer.hashicorp.com/terraform/install](https://developer.hashicorp.com/terraform/install)
 
-Then create an S3 bucket you don't already use for anything else
+If you've applied
+[samdammers/aws-personal-account-template](https://github.com/samdammers/aws-personal-account-template),
+its `artifacts-<account-id>` bucket already exists for exactly this - use
+that instead of creating a new one. Otherwise, create an S3 bucket you don't
+already use for anything else
 ([Creating a bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html)),
 e.g.:
 ```bash
