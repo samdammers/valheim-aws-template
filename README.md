@@ -49,14 +49,84 @@ across stop/start, unlike an ECS/Fargate task, which gets a new IP on every star
 
 You need, already existing in your own AWS account before running `terraform apply`:
 
-- A Route53 **public hosted zone** for a domain you own (this stack only adds
-  records to it — it doesn't register a domain or create the zone).
-- A **VPC with a public subnet** (has a route to an internet gateway) — the default
-  VPC in any AWS region works fine if you don't have a custom one.
-- Terraform >= 1.16, and the AWS CLI authenticated (this stack uses the CLI's default
-  credential chain — no hardcoded profile).
-- An S3 bucket you own, for Terraform remote state (or skip remote state for a quick
-  trial — see [Configure](#configure)).
+### 1. An AWS account, with an authenticated CLI
+
+If you don't have one: [sign up here](https://portal.aws.amazon.com/billing/signup)
+(needs a credit card, but this stack's monthly cost is small — see
+[Cost](#cost) below). Then, rather than using the root login day-to-day, create an
+IAM user or role for yourself and install/configure the AWS CLI:
+
+- [Creating an IAM user](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html)
+- [Installing the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- [Configuring the CLI with your credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html)
+  (`aws configure`) — this stack uses the CLI's default credential chain, no
+  hardcoded profile, so whatever `aws sts get-caller-identity` resolves to is what
+  Terraform will use.
+
+**Permissions:** this stack creates IAM roles/policies for itself (EC2 instance
+role, Lambda role, backup role, API Gateway logging role), on top of EC2, Lambda,
+API Gateway, Route53, ACM, Secrets Manager, CloudWatch, and S3 (state) resources.
+For a personal project like this, the simplest path is an IAM user/role with the
+AWS-managed `AdministratorAccess` policy — a scoped-down policy is possible but
+isn't provided here, since Terraform creating IAM roles on your behalf inherently
+needs broad IAM permissions itself.
+
+### 2. A domain, delegated to a Route53 hosted zone
+
+This stack only **adds records to** an existing Route53 public hosted zone — it
+doesn't register a domain or create the zone for you. Two ways to get one:
+
+- **Register a new domain directly through Route53** (simplest — the hosted zone
+  is created for you automatically):
+  [Registering a new domain](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/domain-register.html)
+- **Already own a domain elsewhere** (Namecheap, GoDaddy, etc.): create a hosted
+  zone for it in Route53, then update your registrar's nameserver (NS) records to
+  point at the four nameservers Route53 gives you:
+  [Working with hosted zones](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/AboutHZWorkingWith.html)
+
+Either way, once it's set up you'll have a `hosted_zone_id` (looks like
+`Z0123456789ABCDEFGHIJ`) — find it any time with:
+```bash
+aws route53 list-hosted-zones-by-name --dns-name <your-domain>
+```
+
+### 3. A VPC with a public subnet
+
+The **default VPC** that every AWS region already has works fine — you don't need
+to create a custom one. ([What's a default VPC?](https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html))
+Find your default VPC and one of its subnets with:
+```bash
+aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text --region <your-aws-region>
+aws ec2 describe-subnets --filters Name=vpc-id,Values=<vpc-id-from-above> --query 'Subnets[0].SubnetId' --output text --region <your-aws-region>
+```
+Any subnet in the default VPC is public (has a route to an internet gateway), so
+the first one returned is fine.
+
+### 4. Terraform, and an S3 bucket for its state
+
+Install Terraform >= 1.16: [developer.hashicorp.com/terraform/install](https://developer.hashicorp.com/terraform/install)
+
+Then create an S3 bucket you don't already use for anything else
+([Creating a bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-bucket.html)),
+e.g.:
+```bash
+aws s3api create-bucket --bucket <your-unique-bucket-name> --region <your-aws-region>
+```
+(Or skip this and use local state for a quick trial — see [Configure](#configure).)
+
+## Cost
+
+The EC2 instance only bills while it's actually running (that's the point of
+idle auto-stop), at whatever the current on-demand rate is for your chosen
+`instance_type` and region — check
+[EC2 on-demand pricing](https://aws.amazon.com/ec2/pricing/on-demand/) for a
+figure, since it varies by region and changes over time. On top of that, small
+fixed costs run whether or not the server is up: the 15GB `gp3` EBS volume, the
+Elastic IP's hourly fee (billed even while stopped), the Route53 hosted zone
+(~$0.50/month if you created it just for this), weekly EBS backup storage, and
+S3 for Terraform state — all together typically a few dollars a month. Lambda
+and API Gateway are effectively free at this call volume (well under the
+AWS free tier).
 
 ## Configure
 
@@ -134,20 +204,46 @@ container with updated `ADMINLIST_IDS`.
 ### Discord bot (optional)
 
 Slash commands `/valheim-start`, `/valheim-stop`, `/valheim-status` — same Lambda,
-via the `/discord` webhook route, no separate hosting. Skip this whole section if you
-don't want it (leave `discord_application_id`/`discord_public_key` blank in your
-tfvars — the `/discord` route just rejects every request with 401 in that case).
+via the `/discord` webhook route, no separate hosting (no always-on bot process to
+run anywhere). Skip this whole section if you don't want it: leave
+`discord_application_id`/`discord_public_key` blank in your tfvars and the
+`/discord` route just rejects every request with 401.
 
-1. Create a Discord application in the [Developer Portal](https://discord.com/developers/applications).
-2. Set `discord_application_id` / `discord_public_key` in your `terraform.tfvars`
-   (from the app's General Information page — not secret) and `terraform apply`.
-3. Set the app's **Interactions Endpoint URL** to `terraform output discord_interactions_url`.
-4. Push the bot token: `aws secretsmanager put-secret-value --secret-id valheim/discord-bot-token --secret-string "..." --region <your-aws-region>` (never via Terraform/git).
-5. `DISCORD_APPLICATION_ID=<id> AWS_REGION=<your-aws-region> ./scripts/register-discord-commands.sh` — re-run only if the command list itself changes (this is a bulk-overwrite of Discord's global command list, not a merge).
-6. Invite/re-invite the app to your server with **both** `bot` and `applications.commands`
-   OAuth2 scopes (Developer Portal → OAuth2 → URL Generator) — without
-   `applications.commands`, the commands won't appear in that server even though
-   they're registered globally.
+There are two separate Discord credentials involved and it's easy to mix them up:
+a **public key** (goes in Terraform, verifies that requests really came from
+Discord — not secret) and a **bot token** (goes in Secrets Manager, used once to
+register the commands — a real secret, never commit it or put it in `.tfvars`).
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+   → **New Application**, give it a name. This is the one-time app setup Discord's
+   own docs walk through in more detail if you want it:
+   [Discord: Overview of Apps](https://discord.com/developers/docs/quick-start/overview-of-apps).
+2. On the app's **General Information** page, copy the **Application ID** and
+   **Public Key** into `discord_application_id` / `discord_public_key` in your
+   `terraform.tfvars`, then `terraform apply`.
+3. Still on **General Information**, set **Interactions Endpoint URL** to the value
+   of `terraform output discord_interactions_url`. Discord immediately sends a test
+   request here and will refuse to save the URL unless the Lambda is already
+   deployed with the matching public key — so this step has to come *after* step 2's
+   `apply`, not before.
+4. On the **Bot** tab, click **Reset Token** to reveal the bot token, then push it
+   straight to Secrets Manager (never through Terraform or git):
+   ```bash
+   aws secretsmanager put-secret-value \
+     --secret-id valheim/discord-bot-token \
+     --secret-string "<paste-the-bot-token>" \
+     --region <your-aws-region>
+   ```
+5. Register the slash commands with Discord (one-off; re-run only if the command
+   list itself changes — this bulk-overwrites Discord's global command list for
+   your app, it doesn't merge):
+   ```bash
+   DISCORD_APPLICATION_ID=<id> AWS_REGION=<your-aws-region> ./scripts/register-discord-commands.sh
+   ```
+6. On the **OAuth2 → URL Generator** tab, check **both** the `bot` and
+   `applications.commands` scopes, open the generated URL, and invite the app to
+   your server. Without `applications.commands` checked, the commands won't show up
+   in that server even though they're registered globally in step 5.
 
 ### Creating a new world (world modifiers, difficulty, seed)
 
