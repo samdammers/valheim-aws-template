@@ -23,6 +23,13 @@ and [Configure](#configure) below.
 > `domain_name` variable creates the hosted zone
 > [prerequisite 2](#2-a-domain-delegated-to-a-route53-hosted-zone) needs.
 
+## AI disclosure
+
+This repo was built collaboratively with Claude (Anthropic's AI) - every
+commit's message says so (`Co-Authored-By: Claude`). Read through the
+Terraform and the caveats below before applying any of this to your own
+account, rather than trusting the README's word for what it does.
+
 ## Architecture
 
 ```mermaid
