@@ -98,7 +98,7 @@ resource "aws_iam_role_policy" "lambda_permissions" {
 # This is a singleton PER AWS ACCOUNT/REGION, not per-API - aws_api_gateway_account
 # sets it account-wide, so declaring it here will conflict with any other Terraform
 # stack in the same account that already manages it. If that's your situation, set
-# manage_api_gateway_account = false in your tfvars and configure it in whichever
+# manage_api_gateway_account = false in your .envrc and configure it in whichever
 # stack already owns it instead - without it (from *some* stack), enabling
 # access_log_settings on the API Gateway stage in apigateway.tf will fail to apply.
 resource "aws_iam_role" "apigw_cloudwatch" {

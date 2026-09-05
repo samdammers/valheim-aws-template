@@ -78,3 +78,11 @@ that pattern: variable with no default (or a generic placeholder) + an entry in
 - The server password lives in Secrets Manager (`valheim/credentials`), populated
   out-of-band via `aws secretsmanager put-secret-value` - never put it in `.envrc`
   or Terraform state.
+- `world_preset`/`world_modifiers`/`world_setkeys` (see `locals.tf` and
+  `world-presets.yaml`) resolve into the same `-modifier`/`-setkey` flags a consumer
+  could type into `server_args` by hand - they're a validated, discoverable layer on
+  top of it, not a separate mechanism. `world-presets.yaml` is deliberately plain
+  data (no Terraform changes needed to add a preset); `world_modifiers` has a
+  `validation` block per dial since Valheim silently ignores an invalid one rather
+  than erroring, and `world_setkeys` deliberately doesn't, since there's no one
+  authoritative list of valid keys to validate against.
