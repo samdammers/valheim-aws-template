@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars and fill in your own values. terraform.tfvars is gitignored.
+
+# --- Required — no sensible default, these are yours ---
+aws_region     = "us-east-1"
+domain         = "example.com"           # a Route53 hosted zone you already own
+hosted_zone_id = "ZXXXXXXXXXXXXXXXXXXXX" # `aws route53 list-hosted-zones-by-name --dns-name example.com`
+vpc_id         = "vpc-xxxxxxxxxxxxxxxxx" # `aws ec2 describe-vpcs`
+subnet_id      = "subnet-xxxxxxxxxxxxxxxxx" # a *public* subnet in the VPC above, `aws ec2 describe-subnets`
+
+# --- Optional — sensible defaults, override to taste ---
+# server_name    = "My Valheim Server"
+# world_name     = "MyWorld"
+# server_args    = "-modifier combat hard -modifier resources more"
+# admin_steamids = ["76561198000000000"]
+# instance_type  = "t3.xlarge"
+
+# --- Optional Discord slash-command integration (leave blank to skip) ---
+# discord_application_id = ""
+# discord_public_key     = ""
+# discord_webhook_url    = ""

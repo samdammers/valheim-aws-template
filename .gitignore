@@ -1,0 +1,32 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Backend config (bucket/key/region are yours, not committed) — see backend.hcl.example
+backend.hcl
+
+# Lambda build artifacts — vendored by the null_resource in lambda.tf, not committed
+terraform/lambda/handler.zip
+terraform/lambda/nacl/
+terraform/lambda/cffi/
+terraform/lambda/pycparser/
+terraform/lambda/bin/
+terraform/lambda/_cffi_backend*.so
+terraform/lambda/*.dist-info/
+terraform/lambda/*.libs/
+
+# Local env
+.envrc
+.env

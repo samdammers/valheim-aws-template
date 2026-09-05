@@ -1,0 +1,57 @@
+#!/bin/bash
+# Runs once, on first boot only (standard cloud-init behavior). This is fine for our
+# stop/start (not terminate/recreate) pattern: the EBS data volume is reattached and
+# auto-mounted via /etc/fstab on every boot, and dockerd auto-restarts the container
+# (--restart unless-stopped) whenever the daemon starts — so nothing here needs to
+# re-run after the first boot.
+set -euo pipefail
+exec > >(tee /var/log/valheim-userdata.log) 2>&1
+
+dnf install -y docker jq
+systemctl enable --now docker
+
+# --- Wait for and mount the EBS data volume ---
+DEVICE=/dev/xvdf
+for i in $(seq 1 30); do
+  [ -e "$DEVICE" ] && break
+  sleep 2
+done
+
+if ! blkid "$DEVICE" >/dev/null 2>&1; then
+  mkfs.ext4 "$DEVICE"
+fi
+
+MOUNT_POINT=/mnt/valheim-data
+mkdir -p "$MOUNT_POINT"
+UUID=$(blkid -s UUID -o value "$DEVICE")
+grep -q "$UUID" /etc/fstab || echo "UUID=$UUID $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+mount -a
+
+mkdir -p "$MOUNT_POINT/config" "$MOUNT_POINT/gamedata"
+
+# --- Fetch server password from Secrets Manager ---
+SERVER_PASS=$(aws secretsmanager get-secret-value \
+  --secret-id "${secret_arn}" \
+  --region "${region}" \
+  --query SecretString --output text | jq -r .SERVER_PASS)
+
+# --- Run the Valheim dedicated server container ---
+# community-valheim-tools/valheim-server-docker (formerly lloesche/valheim-server-docker)
+docker run -d \
+  --name valheim \
+  --restart unless-stopped \
+  -p 2456-2458:2456-2458/udp \
+  -v "$MOUNT_POINT/config:/config" \
+  -v "$MOUNT_POINT/gamedata:/opt/valheim" \
+  -e SERVER_NAME="${server_name}" \
+  -e WORLD_NAME="${world_name}" \
+  -e SERVER_PASS="$SERVER_PASS" \
+  -e SERVER_PUBLIC=true \
+  -e ADMINLIST_IDS="${admin_steamids}" \
+  -e BACKUPS=true \
+  -e BACKUPS_CRON="0 * * * *" \
+  -e BACKUPS_MAX_AGE=3 \
+  -e UPDATE_CRON="*/15 * * * *" \
+  -e DISCORD_WEBHOOK="${discord_webhook_url}" \
+  -e SERVER_ARGS="${server_args}" \
+  ghcr.io/lloesche/valheim-server

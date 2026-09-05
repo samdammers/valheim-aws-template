@@ -1,0 +1,5 @@
+# Copy to backend.hcl and fill in an S3 bucket you already own. backend.hcl is
+# gitignored. Then: terraform init -backend-config=backend.hcl
+bucket       = "your-terraform-state-bucket"
+key          = "valheim/terraform.tfstate"
+region       = "us-east-1"
