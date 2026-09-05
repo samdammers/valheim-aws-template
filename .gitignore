@@ -25,6 +25,7 @@ terraform/lambda/bin/
 terraform/lambda/_cffi_backend*.so
 terraform/lambda/*.dist-info/
 terraform/lambda/*.libs/
+terraform/lambda/__pycache__/
 
 # Local env
 .envrc
