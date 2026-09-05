@@ -9,6 +9,13 @@ This is a template: every account-specific value (domain, AWS account, VPC, …)
 a variable you supply, not a default baked into the repo. See [Prerequisites](#prerequisites)
 and [Configure](#configure) below.
 
+> **Setting up a brand-new personal AWS account?** [samdammers/aws](https://github.com/samdammers/aws)
+> bootstraps secure sign-in (Google login via Auth0 + IAM Identity Center, no IAM
+> user password) plus baseline guardrails (CloudTrail, an org-wide SCP, cost
+> anomaly alerts) — a good first step before deploying stacks like this one. It's
+> optional and independent: it doesn't create the VPC, hosted zone, or state
+> bucket this template needs (see [Prerequisites](#prerequisites)).
+
 ## Architecture
 
 ```
