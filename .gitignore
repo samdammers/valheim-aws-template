@@ -13,8 +13,8 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Backend config (bucket/key/region are yours, not committed) - see backend.hcl.example
-backend.hcl
+# Backend config (bucket/key/region are yours, not committed) - see backend.tf.example
+backend.tf
 
 # Lambda build artifacts - vendored by the null_resource in lambda.tf, not committed
 terraform/lambda/handler.zip

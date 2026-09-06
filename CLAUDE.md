@@ -38,9 +38,9 @@ Every account-specific value (domain, hosted zone ID, VPC/subnet, AWS region,
 Discord app credentials) is a `variable` with **no default** in `variables.tf` (or a
 generic placeholder default) - consumers supply their own via `TF_VAR_*`
 environment variables in `.envrc` (see `.envrc.example`), not a tracked
-`terraform.tfvars`. Similarly, `backend.tf` is a *partial* S3 backend
-config - bucket/key/region come from `-backend-config=backend.hcl`
-(`backend.hcl.example`), since a hardcoded state bucket would point every consumer's
+`terraform.tfvars`. Similarly, `backend.tf` itself is gitignored (see
+`backend.tf.example`) - each consumer copies the example and fills in their own
+bucket/key/region, since a hardcoded state bucket would point every consumer's
 Terraform at the same bucket. If you're adding a new account-specific value, follow
 that pattern: variable with no default (or a generic placeholder) + an entry in
 `.envrc.example`, never a real value baked into a `.tf` file's default.

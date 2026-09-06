@@ -1,0 +1,11 @@
+# Copy to backend.tf and fill in an S3 bucket you already own. backend.tf is
+# gitignored (aside from this example) - never commit your real bucket name.
+terraform {
+  backend "s3" {
+    bucket       = "your-terraform-state-bucket"
+    key          = "valheim/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
+  }
+}
