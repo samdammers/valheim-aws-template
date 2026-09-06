@@ -158,18 +158,18 @@ AWS free tier).
 ```bash
 cp .envrc.example .envrc   # fill in domain, hosted_zone_id, vpc_id, subnet_id, etc., then: direnv allow
 cd terraform/
-cp backend.tf.example backend.tf   # fill in your state bucket (or delete it entirely for local state)
+# Edit backend.tf's bucket/key/region for your own state bucket (or delete it
+# entirely for local state) - don't commit your real bucket name.
 
 terraform init
 terraform apply
 ```
 
-`.envrc` and `backend.tf` are both gitignored - see `.envrc.example` and
-`backend.tf.example` for the full list of variables and their descriptions
-(`terraform/variables.tf` is the source of truth). This repo uses `TF_VAR_*`
-environment variables (via [direnv](https://direnv.net/)) rather than a
-tracked `terraform.tfvars`, so nothing here depends on you remembering to
-`-var-file` anything.
+`.envrc` is gitignored - see `.envrc.example` for the full list of variables
+and their descriptions (`terraform/variables.tf` is the source of truth).
+This repo uses `TF_VAR_*` environment variables (via [direnv](https://direnv.net/))
+rather than a tracked `terraform.tfvars`, so nothing here depends on you
+remembering to `-var-file` anything.
 
 Then populate the server password (never stored in Terraform state):
 
@@ -358,7 +358,7 @@ hardcoded profile) - make sure your CLI is authenticated before running.
 | `iam.tf` | EC2 instance role (SSM + Secrets Manager), Lambda role, API Gateway account-level CloudWatch role |
 | `secrets.tf` | Secrets Manager secret (password set out-of-band) |
 | `backup.tf` | AWS Backup - weekly EBS snapshot, 8-week retention |
-| `backend.tf` | S3 state backend (gitignored - see `backend.tf.example`), native `use_lockfile` locking (no DynamoDB) |
+| `backend.tf` | S3 state backend - edit bucket/key/region for your own, don't commit real values, native `use_lockfile` locking (no DynamoDB) |
 
 ### Important caveats
 
