@@ -145,6 +145,11 @@ def discord_message(content, ephemeral=True):
     return discord_response({"type": 4, "data": data})
 
 
+def discord_invoker_name(interaction):
+    user = interaction.get("member", {}).get("user") or interaction.get("user", {})
+    return user.get("global_name") or user.get("username") or "someone"
+
+
 def handle_discord_interaction(event):
     headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
     raw_body = event.get("body") or ""
@@ -169,24 +174,29 @@ def handle_discord_interaction(event):
         ec2_client = sess.client("ec2")
         command = interaction.get("data", {}).get("name")
 
-        # /valheim-start and /valheim-status also hand back how to connect (address +
-        # password) - ephemeral (visible only to whoever ran the command), even though
-        # this Discord is invite-only, so the password doesn't sit in plain channel
-        # history/screenshots. The plain HTTP /status route never gets the password.
+        # /valheim-start and /valheim-status hand back how to connect (address +
+        # password), publicly - the password ends up in plain channel history/
+        # screenshots, accepted as a tradeoff for everyone seeing it without asking.
+        # The plain HTTP /status route never gets the password either way.
         if command == "valheim-start":
             content = start_instance(ec2_client)
             content += f"\n\nConnect: `{SERVER_ADDRESS}`\nPassword: `{get_server_password(sess.client('secretsmanager'))}`"
-        elif command == "valheim-stop":
+            content += f"\nStarted by {discord_invoker_name(interaction)}"
+            return discord_message(content, ephemeral=False)
+
+        if command == "valheim-stop":
             content = stop_instance(ec2_client)
-        elif command == "valheim-status":
+            content += f"\nStopped by {discord_invoker_name(interaction)}"
+            return discord_message(content, ephemeral=False)
+
+        if command == "valheim-status":
             status = instance_status(ec2_client)
             content = f"State: {status['state']}"
             if status["state"] == "running":
                 content += f"\n\nConnect: `{SERVER_ADDRESS}`\nPassword: `{get_server_password(sess.client('secretsmanager'))}`"
-        else:
-            content = f"Unknown command: {command}"
+            return discord_message(content, ephemeral=False)
 
-        return discord_message(content)
+        return discord_message(f"Unknown command: {command}")
 
     return discord_message("Unsupported interaction type")
 
