@@ -65,6 +65,7 @@ resource "aws_lambda_function" "valheim" {
       IDLE_GRACE_PERIOD_MINUTES = tostring(var.idle_grace_period_minutes)
       IDLE_THRESHOLD_BYTES      = tostring(var.idle_threshold_bytes)
       DISCORD_PUBLIC_KEY        = var.discord_public_key
+      DISCORD_WEBHOOK_URL       = var.discord_webhook_url
       SERVER_ADDRESS            = local.server_fqdn
       CREDENTIALS_SECRET_ARN    = aws_secretsmanager_secret.valheim.arn
     }

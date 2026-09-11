@@ -205,7 +205,9 @@ The server auto-stops itself after `idle_window_minutes` of low network activity
 fresh boot isn't stopped before anyone connects). Tune these three variables in
 `terraform/variables.tf` (or your `.envrc`) once you've watched real
 CloudWatch `NetworkIn` numbers for a few sessions - the defaults are a starting
-heuristic, not a measured value.
+heuristic, not a measured value. If `discord_webhook_url` is set, the Lambda posts
+a message to it whenever it auto-stops the server this way, so players know it
+wasn't stopped by an admin.
 
 ### Connecting
 

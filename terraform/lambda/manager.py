@@ -19,6 +19,8 @@ Scheduled event  - {"scheduled_action": "check_idle"}: stop the instance if it l
 import base64
 import json
 import os
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 import boto3
@@ -30,6 +32,7 @@ IDLE_WINDOW_MINUTES = int(os.environ.get("IDLE_WINDOW_MINUTES", "30"))
 IDLE_GRACE_PERIOD_MINUTES = int(os.environ.get("IDLE_GRACE_PERIOD_MINUTES", "20"))
 IDLE_THRESHOLD_BYTES = float(os.environ.get("IDLE_THRESHOLD_BYTES", "100000"))
 DISCORD_PUBLIC_KEY = os.environ.get("DISCORD_PUBLIC_KEY", "")
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 SERVER_ADDRESS = os.environ.get("SERVER_ADDRESS", "")
 CREDENTIALS_SECRET_ARN = os.environ.get("CREDENTIALS_SECRET_ARN", "")
 
@@ -57,6 +60,28 @@ def instance_status(ec2_client):
         "state": instance["State"]["Name"],
         "public_ip": instance.get("PublicIpAddress"),
     }
+
+
+# ---------------------------------------------------------------------------
+# Discord webhook notifications - proactive posts (unlike the slash-command
+# responses below, which only ever reply to an interaction Discord initiated).
+# Uses the same DISCORD_WEBHOOK_URL already wired into the Docker container's
+# own start/stop/backup messages, so idle auto-stop shows up in the same channel.
+# ---------------------------------------------------------------------------
+
+def notify_discord(content):
+    if not DISCORD_WEBHOOK_URL:
+        return
+    req = urllib.request.Request(
+        DISCORD_WEBHOOK_URL,
+        data=json.dumps({"content": content}).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=5)
+    except urllib.error.URLError as exc:
+        print(f"WARN: failed to post Discord webhook notification: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -99,10 +124,12 @@ def check_idle(ec2_client, cloudwatch_client):
     avg_bytes = datapoints[0]["Average"]
     if avg_bytes < IDLE_THRESHOLD_BYTES:
         stop_instance(ec2_client)
-        return (
+        message = (
             f"Idle (avg NetworkIn {avg_bytes:.0f}B < {IDLE_THRESHOLD_BYTES:.0f}B "
             f"over {IDLE_WINDOW_MINUTES}m) - stopping instance"
         )
+        notify_discord(f":zzz: Valheim server auto-stopped - no activity for {IDLE_WINDOW_MINUTES}m")
+        return message
 
     return f"Active (avg NetworkIn {avg_bytes:.0f}B) - leaving instance running"
 
