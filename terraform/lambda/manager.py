@@ -19,6 +19,8 @@ Scheduled event  - {"scheduled_action": "check_idle"}: stop the instance if it l
 import base64
 import json
 import os
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 import boto3
@@ -30,6 +32,7 @@ IDLE_WINDOW_MINUTES = int(os.environ.get("IDLE_WINDOW_MINUTES", "30"))
 IDLE_GRACE_PERIOD_MINUTES = int(os.environ.get("IDLE_GRACE_PERIOD_MINUTES", "20"))
 IDLE_THRESHOLD_BYTES = float(os.environ.get("IDLE_THRESHOLD_BYTES", "100000"))
 DISCORD_PUBLIC_KEY = os.environ.get("DISCORD_PUBLIC_KEY", "")
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 SERVER_ADDRESS = os.environ.get("SERVER_ADDRESS", "")
 CREDENTIALS_SECRET_ARN = os.environ.get("CREDENTIALS_SECRET_ARN", "")
 
@@ -50,13 +53,44 @@ def stop_instance(ec2_client):
     return f"Stopping instance {INSTANCE_ID}"
 
 
+def format_uptime(launch_time):
+    seconds = (datetime.now(timezone.utc) - launch_time).total_seconds()
+    hours, minutes = divmod(int(seconds) // 60, 60)
+    return f"{hours}h {minutes}m" if hours else f"{minutes}m"
+
+
 def instance_status(ec2_client):
     resp = ec2_client.describe_instances(InstanceIds=[INSTANCE_ID])
     instance = resp["Reservations"][0]["Instances"][0]
-    return {
+    status = {
         "state": instance["State"]["Name"],
         "public_ip": instance.get("PublicIpAddress"),
     }
+    if status["state"] == "running":
+        status["uptime"] = format_uptime(instance["LaunchTime"])
+    return status
+
+
+# ---------------------------------------------------------------------------
+# Discord webhook notifications - proactive posts (unlike the slash-command
+# responses below, which only ever reply to an interaction Discord initiated).
+# Uses the same DISCORD_WEBHOOK_URL already wired into the Docker container's
+# own start/stop/backup messages, so idle auto-stop shows up in the same channel.
+# ---------------------------------------------------------------------------
+
+def notify_discord(content):
+    if not DISCORD_WEBHOOK_URL:
+        return
+    req = urllib.request.Request(
+        DISCORD_WEBHOOK_URL,
+        data=json.dumps({"content": content}).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=5)
+    except urllib.error.URLError as exc:
+        print(f"WARN: failed to post Discord webhook notification: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -99,10 +133,12 @@ def check_idle(ec2_client, cloudwatch_client):
     avg_bytes = datapoints[0]["Average"]
     if avg_bytes < IDLE_THRESHOLD_BYTES:
         stop_instance(ec2_client)
-        return (
+        message = (
             f"Idle (avg NetworkIn {avg_bytes:.0f}B < {IDLE_THRESHOLD_BYTES:.0f}B "
             f"over {IDLE_WINDOW_MINUTES}m) - stopping instance"
         )
+        notify_discord(f":zzz: Valheim server auto-stopped - no activity for {IDLE_WINDOW_MINUTES}m")
+        return message
 
     return f"Active (avg NetworkIn {avg_bytes:.0f}B) - leaving instance running"
 
@@ -179,9 +215,18 @@ def handle_discord_interaction(event):
         # screenshots, accepted as a tradeoff for everyone seeing it without asking.
         # The plain HTTP /status route never gets the password either way.
         if command == "valheim-start":
-            content = start_instance(ec2_client)
+            status = instance_status(ec2_client)
+            # Already running (e.g. someone hits /valheim-start again after it's up) -
+            # don't re-trigger a "Starting instance" message, just hand back how to
+            # connect like /valheim-status would.
+            if status["state"] == "running":
+                content = f"Already running (up {status['uptime']})"
+                invoker_line = f"Checked by {discord_invoker_name(interaction)}"
+            else:
+                content = start_instance(ec2_client)
+                invoker_line = f"Started by {discord_invoker_name(interaction)}"
             content += f"\n\nConnect: `{SERVER_ADDRESS}`\nPassword: `{get_server_password(sess.client('secretsmanager'))}`"
-            content += f"\nStarted by {discord_invoker_name(interaction)}"
+            content += f"\n{invoker_line}"
             return discord_message(content, ephemeral=False)
 
         if command == "valheim-stop":
@@ -193,6 +238,7 @@ def handle_discord_interaction(event):
             status = instance_status(ec2_client)
             content = f"State: {status['state']}"
             if status["state"] == "running":
+                content += f" (up {status['uptime']})"
                 content += f"\n\nConnect: `{SERVER_ADDRESS}`\nPassword: `{get_server_password(sess.client('secretsmanager'))}`"
             return discord_message(content, ephemeral=False)
 

@@ -96,7 +96,7 @@ variable "admin_steamids" {
 }
 
 variable "discord_webhook_url" {
-  description = "Optional Discord webhook for server start/stop/backup notifications"
+  description = "Optional Discord webhook for server start/stop/backup notifications, and for the Lambda's idle auto-stop notification"
   type        = string
   default     = ""
   sensitive   = true
