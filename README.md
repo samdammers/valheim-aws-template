@@ -50,6 +50,9 @@ flowchart TB
 The Discord slash commands (`/valheim-start`, `/valheim-stop`, `/valheim-status`) go
 through the same Lambda, via the `/discord` route - `/valheim-start` and
 `/valheim-status` also reply (ephemerally) with the connect address and password.
+Both also report uptime once the server is running, and `/valheim-start` is safe to
+run again on an already-running server - it reports the status instead of
+re-triggering a start.
 The EventBridge check stops the instance automatically once average network
 activity has been low for `idle_window_minutes` (and it's past
 `idle_grace_period_minutes` since the last start).

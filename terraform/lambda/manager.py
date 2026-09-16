@@ -53,13 +53,22 @@ def stop_instance(ec2_client):
     return f"Stopping instance {INSTANCE_ID}"
 
 
+def format_uptime(launch_time):
+    seconds = (datetime.now(timezone.utc) - launch_time).total_seconds()
+    hours, minutes = divmod(int(seconds) // 60, 60)
+    return f"{hours}h {minutes}m" if hours else f"{minutes}m"
+
+
 def instance_status(ec2_client):
     resp = ec2_client.describe_instances(InstanceIds=[INSTANCE_ID])
     instance = resp["Reservations"][0]["Instances"][0]
-    return {
+    status = {
         "state": instance["State"]["Name"],
         "public_ip": instance.get("PublicIpAddress"),
     }
+    if status["state"] == "running":
+        status["uptime"] = format_uptime(instance["LaunchTime"])
+    return status
 
 
 # ---------------------------------------------------------------------------
@@ -206,9 +215,18 @@ def handle_discord_interaction(event):
         # screenshots, accepted as a tradeoff for everyone seeing it without asking.
         # The plain HTTP /status route never gets the password either way.
         if command == "valheim-start":
-            content = start_instance(ec2_client)
+            status = instance_status(ec2_client)
+            # Already running (e.g. someone hits /valheim-start again after it's up) -
+            # don't re-trigger a "Starting instance" message, just hand back how to
+            # connect like /valheim-status would.
+            if status["state"] == "running":
+                content = f"Already running (up {status['uptime']})"
+                invoker_line = f"Checked by {discord_invoker_name(interaction)}"
+            else:
+                content = start_instance(ec2_client)
+                invoker_line = f"Started by {discord_invoker_name(interaction)}"
             content += f"\n\nConnect: `{SERVER_ADDRESS}`\nPassword: `{get_server_password(sess.client('secretsmanager'))}`"
-            content += f"\nStarted by {discord_invoker_name(interaction)}"
+            content += f"\n{invoker_line}"
             return discord_message(content, ephemeral=False)
 
         if command == "valheim-stop":
@@ -220,6 +238,7 @@ def handle_discord_interaction(event):
             status = instance_status(ec2_client)
             content = f"State: {status['state']}"
             if status["state"] == "running":
+                content += f" (up {status['uptime']})"
                 content += f"\n\nConnect: `{SERVER_ADDRESS}`\nPassword: `{get_server_password(sess.client('secretsmanager'))}`"
             return discord_message(content, ephemeral=False)
 
