@@ -89,6 +89,12 @@ variable "server_args" {
   default     = ""
 }
 
+variable "crossplay" {
+  description = "Enable crossplay (CROSSPLAY=true on the container), switching from Steam matchmaking to Microsoft's PlayFab backend so Xbox/Microsoft Store/Apple App Store players can join alongside Steam players - not needed for Steam-only groups. Opens a third UDP port (2458) for the crossplay backend; already allowed by this stack's security group either way. Only takes effect when the container is first created - same live-instance caveat as world_name/server_args."
+  type        = bool
+  default     = false
+}
+
 variable "admin_steamids" {
   description = "SteamID64s granted admin (kick/ban/console). Populate with your friend group's IDs."
   type        = list(string)

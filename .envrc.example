@@ -21,6 +21,7 @@ export TF_VAR_subnet_id="subnet-xxxxxxxxxxxxxxxxx" # a *public* subnet in the VP
 # export TF_VAR_world_modifiers='{"raids": "less"}' # overrides individual dials on top of world_preset - object variables need JSON syntax
 # export TF_VAR_world_setkeys='["playerevents", "dungeonbuild"]' # free-form global toggles - list variables need JSON-array syntax
 # export TF_VAR_server_args="" # raw escape hatch, appended after the above - for anything they don't cover
+# export TF_VAR_crossplay="true" # let Xbox/Microsoft Store/Apple App Store players join too, not just Steam
 
 # --- Optional Discord slash-command integration (leave blank to skip) ---
 # export TF_VAR_discord_public_key=""

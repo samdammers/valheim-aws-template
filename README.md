@@ -218,6 +218,18 @@ Add server: `valheim.<your-domain>` (or the Elastic IP from `terraform output el
 port 2456. Give it ~1-2 minutes after `/start` for Docker to boot and the game server
 to come up.
 
+### Crossplay (Xbox / Microsoft Store / Apple App Store players)
+
+Set `TF_VAR_crossplay="true"` and `terraform apply` to let non-Steam players join
+alongside Steam players. This switches the server from Steam matchmaking to
+Microsoft's PlayFab backend and opens a third UDP port (2458, already allowed by
+`security_groups.tf`) for that backend traffic - Steam-only groups don't need it.
+Same live-instance caveat as `world_name`/`server_args`: this only takes effect
+when the container is first created, so flipping it on an existing server means
+SSM'ing in and re-running the container with `CROSSPLAY=true` by hand (see
+[Admins / whitelist](#admins--whitelist) above for the same pattern with
+`ADMINLIST_IDS`).
+
 ### Logs / admin shell
 
 No SSH - connect via SSM Session Manager:
@@ -371,7 +383,7 @@ hardcoded profile) - make sure your CLI is authenticated before running.
   re-run on every `/start`. This is fine for our stop/start pattern: the data volume
   auto-mounts via `/etc/fstab` on every boot, and Docker restarts the container
   (`--restart unless-stopped`) whenever the daemon starts. But it means changing
-  `server_name`, `world_name`, `server_args`, `admin_steamids`, etc. won't take effect
+  `server_name`, `world_name`, `server_args`, `admin_steamids`, `crossplay`, etc. won't take effect
   until the instance is replaced (`terraform apply -replace=aws_instance.valheim` -
   safe, the EBS data volume isn't touched) or you make the change by hand over SSM.
 - **The API Gateway account-level CloudWatch logging role** (`aws_api_gateway_account`)

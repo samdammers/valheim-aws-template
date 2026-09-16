@@ -48,6 +48,7 @@ docker run -d \
   -e SERVER_PASS="$SERVER_PASS" \
   -e SERVER_PUBLIC=true \
   -e ADMINLIST_IDS="${admin_steamids}" \
+  -e CROSSPLAY="${crossplay}" \
   -e BACKUPS=true \
   -e BACKUPS_CRON="0 * * * *" \
   -e BACKUPS_MAX_AGE=3 \
