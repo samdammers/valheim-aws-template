@@ -59,11 +59,12 @@ that pattern: variable with no default (or a generic placeholder) + an entry in
   deployed," not "reset to the true default" - this caused a real bug where vendored
   x86_64 PyNaCl wheels got deployed onto a function still configured for arm64.
 - Constructing `boto3.client("ec2")` costs real, CPU-bound seconds (EC2's service model
-  is huge) - this is why the Lambda's memory is 512MB (Lambda CPU scales with memory)
-  and why the Discord `PING` handshake path is written to never touch boto3 at all. A
-  3+ second PING response was the actual root cause of a "endpoint could not be
-  verified" Discord error - not a signature-verification bug, despite how it first
-  looked from the 401/200 pattern in the logs.
+  is huge) - this is why Lambda's memory is 1024MB (Lambda CPU scales with memory)
+  and why the Discord `POST /discord` router immediately responds with a Discord Deferred
+  Response (`type: 5`), dispatching command execution asynchronously to an async worker
+  Lambda invocation. This guarantees the synchronous HTTP response returns in <100ms and
+  stays well clear of Discord's strict 3-second timeout limit. The `PING` handshake also
+  never touches boto3 at all.
 - **`aws_api_gateway_account` (the account-level CloudWatch logging role for API
   Gateway) is created by default** (`manage_api_gateway_account = true`) so this
   stack applies cleanly standalone in a fresh account. That setting is a singleton
