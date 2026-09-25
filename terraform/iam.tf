@@ -90,6 +90,13 @@ resource "aws_iam_role_policy" "lambda_permissions" {
         Action   = "secretsmanager:GetSecretValue"
         Resource = aws_secretsmanager_secret.valheim.arn
       },
+      {
+        # Allows the synchronous /discord router to invoke this Lambda asynchronously
+        # to process slash commands in the background and beat Discord's 3-second timeout.
+        Effect   = "Allow"
+        Action   = "lambda:InvokeFunction"
+        Resource = "arn:aws:lambda:${local.region}:${data.aws_caller_identity.current.account_id}:function:valheim-manager"
+      },
     ]
   })
 }

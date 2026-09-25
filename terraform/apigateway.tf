@@ -149,8 +149,8 @@ resource "aws_api_gateway_method_settings" "valheim" {
   method_path = "*/*"
 
   settings {
-    throttling_burst_limit = 5
-    throttling_rate_limit  = 1
+    throttling_burst_limit = 20
+    throttling_rate_limit  = 10
   }
 }
 

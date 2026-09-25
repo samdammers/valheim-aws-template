@@ -45,10 +45,9 @@ resource "aws_lambda_function" "valheim" {
   handler = "manager.lambda_handler"
   runtime = "python3.12"
   timeout = 30
-  # Lambda CPU scales with memory. 128MB left boto3.client("ec2") taking ~3s just to
-  # parse EC2's large service model (real CPU-bound work, confirmed via cProfile) -
-  # 512MB cuts that dramatically for the routes that do need an EC2 client.
-  memory_size = 512
+  # Lambda CPU scales with memory. 1024MB allocates significantly more CPU to
+  # speed up boto3 client initialization and async dispatch execution.
+  memory_size = 1024
   role        = aws_iam_role.lambda.arn
 
   # Explicit, not omitted: the AWS provider treats a removed `architectures` attribute
